@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bridge – Vierde van Boven</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap');
+
+:root {
+  --orange: #F48C00;
+  --orange-light: #FFB347;
+  --orange-dark: #C97000;
+  --navy: #1A2540;
+  --navy-light: #243050;
+  --white: #FFFFFF;
+  --gray-light: #F5F5F5;
+  --gray: #E0E0E0;
+  --correct: #4CAF50;
+  --wrong: #E53935;
+  --correct-bg: #E8F5E9;
+  --wrong-bg: #FFEBEE;
+  --shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: #F0F4FF;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, #d0d8f0 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.quiz-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--navy);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 28px;
+  color: var(--white);
+}
+.stickman-svg { flex-shrink: 0; width: 56px; height: 80px; }
+.header-text h1 {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.6rem;
+  color: var(--orange);
+  line-height: 1.1;
+}
+.header-text p { font-size: 0.85rem; color: #9ab; margin-top: 4px; }
+.score-badge {
+  margin-left: auto;
+  background: var(--orange);
+  color: var(--white);
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.1rem;
+  padding: 8px 16px;
+  border-radius: 30px;
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* PROGRESS */
+.progress-bar-wrap {
+  background: var(--navy-light);
+  height: 8px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--orange-light));
+  transition: width 0.4s ease;
+  border-radius: 0 4px 4px 0;
+}
+
+/* CARD */
+.card {
+  background: var(--white);
+  border-radius: 0 0 20px 20px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.hide { display: none !important; }
+
+/* ── LES ── */
+.lesson-body { padding: 28px 28px 20px; }
+
+.step-dots {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+.step-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--gray);
+  transition: background 0.3s, transform 0.3s;
+}
+.step-dot.active { background: var(--orange); transform: scale(1.35); }
+.step-dot.done   { background: var(--orange-dark); }
+
+.lesson-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lesson-label::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--gray);
+  border-radius: 2px;
+}
+.lesson-title {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.45rem;
+  color: var(--navy);
+  margin-bottom: 14px;
+  line-height: 1.2;
+}
+.lesson-text {
+  font-size: 1.05rem;
+  color: #333;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.lesson-text strong { color: var(--navy); }
+
+.lesson-highlight {
+  background: #FFF8E1;
+  border-left: 4px solid var(--orange);
+  border-radius: 0 12px 12px 0;
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--navy);
+}
+.lesson-highlight .hl-title {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1rem;
+  color: var(--orange-dark);
+  margin-bottom: 6px;
+}
+.lesson-tip {
+  background: #E8F5E9;
+  border-left: 4px solid var(--correct);
+  border-radius: 0 12px 12px 0;
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #1B5E20;
+}
+
+/* Speelkaarten */
+.card-fan-wrap { padding-bottom: 30px; margin-bottom: 6px; }
+.card-fan { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.playing-card {
+  width: 54px; height: 76px;
+  border-radius: 7px;
+  border: 2px solid #ccc;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.15);
+  position: relative;
+  transition: transform 0.2s;
+}
+.playing-card .card-rank { font-size: 1.15rem; }
+.playing-card .card-suit { font-size: 0.95rem; margin-top: -2px; }
+.playing-card.red  { color: #D32F2F; }
+.playing-card.black { color: #1A2540; }
+.playing-card.highlighted {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px var(--orange), 2px 3px 10px rgba(0,0,0,0.2);
+  transform: translateY(-12px);
+}
+.playing-card .card-num-label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--orange-dark);
+  white-space: nowrap;
+  background: white;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--orange);
+}
+
+/* Regel van 11 box */
+.rule-box {
+  background: var(--navy);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin: 16px 0;
+  color: white;
+  text-align: center;
+}
+.rule-box .rule-num {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 3rem;
+  color: var(--orange);
+  line-height: 1;
+}
+.rule-box .rule-desc { font-size: 0.95rem; color: #9ab; margin-top: 8px; line-height: 1.5; }
+
+.math-demo {
+  background: #F3F0FF;
+  border: 2px solid #9575CD;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin: 14px 0;
+  font-size: 1rem;
+  color: #311B92;
+  line-height: 2;
+}
+.math-line { display: flex; align-items: center; gap: 12px; }
+.math-op { font-family: 'Fredoka One', sans-serif; font-size: 1.1rem; min-width: 32px; color: #7B1FA2; }
+.math-result {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.2rem;
+  color: var(--correct);
+  background: var(--correct-bg);
+  border-radius: 8px;
+  padding: 2px 10px;
+}
+
+/* Les navigatie */
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 28px 28px;
+}
+.lesson-prev-btn {
+  background: transparent;
+  border: 2.5px solid var(--gray);
+  border-radius: 30px;
+  padding: 12px 22px;
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1rem;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.lesson-prev-btn:hover:not(:disabled) { border-color: var(--navy); color: var(--navy); }
+.lesson-prev-btn:disabled { opacity: 0.3; cursor: default; }
+.lesson-next-btn {
+  background: var(--orange);
+  border: none;
+  border-radius: 30px;
+  padding: 14px 28px;
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.18s;
+  box-shadow: 0 4px 14px rgba(244,140,0,0.35);
+}
+.lesson-next-btn:hover { background: var(--orange-dark); transform: translateY(-2px); }
+.lesson-next-btn.start-quiz { background: var(--navy); box-shadow: 0 4px 14px rgba(26,37,64,0.35); }
+.lesson-next-btn.start-quiz:hover { background: var(--navy-light); }
+
+.lesson-page { display: none; }
+.lesson-page.active { display: block; }
+
+/* ── QUIZ ── */
+.question-area {
+  padding: 28px 28px 20px;
+  border-bottom: 2px dashed var(--gray);
+}
+.question-num {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.question-num::after { content: ''; flex: 1; height: 2px; background: var(--gray); border-radius: 2px; }
+.question-text { font-size: 1.15rem; font-weight: 700; color: var(--navy); line-height: 1.5; }
+
+.card-hand {
+  font-family: monospace;
+  background: #FFFDE7;
+  border: 1px solid #FFE082;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 14px;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--navy);
+}
+.suit-h, .suit-d { color: #D32F2F; }
+
+.options-area {
+  padding: 20px 28px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 500px) { .options-area { grid-template-columns: 1fr; } }
+
+.option-btn {
+  background: var(--gray-light);
+  border: 2.5px solid var(--gray);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--navy);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.option-btn:hover:not(:disabled) {
+  border-color: var(--orange);
+  background: #FFF3E0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244,140,0,0.2);
+}
+.option-letter {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 0.8rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.option-btn.correct { background: var(--correct-bg); border-color: var(--correct); color: #1B5E20; }
+.option-btn.correct .option-letter { background: var(--correct); }
+.option-btn.wrong   { background: var(--wrong-bg);   border-color: var(--wrong);   color: #B71C1C; }
+.option-btn.wrong   .option-letter { background: var(--wrong); }
+.option-btn:disabled { cursor: default; transform: none; }
+
+.feedback-box {
+  margin: 0 28px 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+  display: none;
+}
+.feedback-box.show { display: block; }
+.feedback-box.correct { background: var(--correct-bg); color: #1B5E20; border: 2px solid var(--correct); }
+.feedback-box.wrong   { background: var(--wrong-bg);   color: #B71C1C; border: 2px solid var(--wrong); }
+
+.nav-area { padding: 0 28px 28px; display: flex; justify-content: flex-end; }
+.next-btn {
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: 30px;
+  padding: 14px 30px;
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.18s, transform 0.18s;
+  box-shadow: 0 4px 14px rgba(244,140,0,0.35);
+}
+.next-btn:hover { background: var(--orange-dark); transform: translateY(-2px); }
+.next-btn.show { display: flex; }
+
+/* RESULTATEN */
+.results-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 28px;
+  text-align: center;
+  gap: 16px;
+}
+.results-screen.show { display: flex; }
+.results-score-circle {
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: var(--navy);
+  border: 6px solid var(--orange);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+.results-score-circle .big-num {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 2.8rem;
+  color: var(--orange);
+  line-height: 1;
+}
+.results-score-circle .of-num { font-size: 0.85rem; color: #9ab; }
+.results-title { font-family: 'Fredoka One', sans-serif; font-size: 1.8rem; color: var(--navy); }
+.results-msg { font-size: 1rem; color: #555; max-width: 420px; }
+.restart-btn {
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 30px;
+  padding: 14px 32px;
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 1.05rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.18s;
+  box-shadow: var(--shadow);
+}
+.restart-btn:hover { background: var(--navy-light); }
+</style>
+</head>
+<body>
+<div class="quiz-wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <svg class="stickman-svg" viewBox="0 0 56 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="52" width="36" height="28" rx="5" fill="#555" stroke="#222" stroke-width="2"/>
+      <circle cx="28" cy="68" r="10" fill="#999" stroke="#222" stroke-width="1.5"/>
+      <rect x="22" y="8" width="10" height="46" rx="2" fill="#FFE000" stroke="#222" stroke-width="1.5"/>
+      <line x1="22" y1="15" x2="32" y2="15" stroke="#AAA" stroke-width="1"/>
+      <line x1="22" y1="22" x2="32" y2="22" stroke="#AAA" stroke-width="1"/>
+      <line x1="22" y1="29" x2="32" y2="29" stroke="#AAA" stroke-width="1"/>
+      <line x1="22" y1="36" x2="32" y2="36" stroke="#AAA" stroke-width="1"/>
+      <circle cx="28" cy="22" r="7" fill="white" stroke="#222" stroke-width="2"/>
+      <rect x="19" y="14" width="18" height="3" rx="1" fill="#222"/>
+      <rect x="23" y="11" width="10" height="4" rx="2" fill="#222"/>
+      <line x1="34" y1="14" x2="37" y2="18" stroke="#E53935" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="37" cy="19" r="2" fill="#E53935"/>
+      <rect x="22" y="29" width="12" height="14" rx="5" fill="#F48C00"/>
+      <line x1="22" y1="33" x2="14" y2="40" stroke="#222" stroke-width="2" stroke-linecap="round"/>
+      <line x1="34" y1="33" x2="42" y2="40" stroke="#222" stroke-width="2" stroke-linecap="round"/>
+      <line x1="25" y1="43" x2="23" y2="53" stroke="#222" stroke-width="2" stroke-linecap="round"/>
+      <line x1="31" y1="43" x2="33" y2="53" stroke="#222" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="22" cy="53" rx="4" ry="2" fill="#F48C00"/>
+      <ellipse cx="34" cy="53" rx="4" ry="2" fill="#F48C00"/>
+    </svg>
+    <div class="header-text">
+      <h1>Vierde van Boven</h1>
+      <p id="headerSub">Les + Quiz · Vierde van Boven</p>
+    </div>
+    <div class="score-badge" id="scoreBadge">Les 1/4</div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <!-- CARD -->
+  <div class="card">
+
+    <!-- ══ LES ══ -->
+    <div id="lessonScreen">
+      <div class="lesson-body">
+
+        <div class="step-dots" id="stepDots"></div>
+
+        <!-- Les 1: Wat is de vierde van boven? -->
+        <div class="lesson-page active" id="lp0">
+          <div class="lesson-label">Les · stap 1 van 4</div>
+          <div class="lesson-title">🔢 Wat is de vierde van boven?</div>
+          <p class="lesson-text">
+            Stel je hebt vijf schoppen: <strong>A, V, 9, 6, 3</strong>. Tel ze van hoog naar laag:
+          </p>
+          <div class="card-fan-wrap">
+            <div class="card-fan">
+              <div class="playing-card black"><span class="card-rank">A</span><span class="card-suit">♠</span><span class="card-num-label">1e</span></div>
+              <div class="playing-card black"><span class="card-rank">V</span><span class="card-suit">♠</span><span class="card-num-label">2e</span></div>
+              <div class="playing-card black"><span class="card-rank">9</span><span class="card-suit">♠</span><span class="card-num-label">3e</span></div>
+              <div class="playing-card black highlighted"><span class="card-rank">6</span><span class="card-suit">♠</span><span class="card-num-label">4e ← dit!</span></div>
+              <div class="playing-card black"><span class="card-rank">3</span><span class="card-suit">♠</span><span class="card-num-label">5e</span></div>
+            </div>
+          </div>
+          <p class="lesson-text">
+            De <strong>vierde van boven</strong> is de kaart op plek 4 als je telt van hoog naar laag. In dit voorbeeld is dat de <strong>6</strong>.
+          </p>
+          <div class="lesson-highlight">
+            <div class="hl-title">📌 De afspraak</div>
+            Heb je vier kaarten of meer in een kleur en wil je uitkomen? Speel dan de <strong>vierde van boven</strong>. Je partner weet dan meteen welke kaart het is!
+          </div>
+        </div>
+
+        <!-- Les 2: De Regel van Elf -->
+        <div class="lesson-page" id="lp1">
+          <div class="lesson-label">Les · stap 2 van 4</div>
+          <div class="lesson-title">🧠 De Regel van Elf</div>
+          <p class="lesson-text">
+            Als jij de vierde van boven uitspeelt, kan je partner een slimme rekensom doen: de <strong>Regel van Elf</strong>.
+          </p>
+          <div class="rule-box">
+            <div class="rule-num">11</div>
+            <div class="rule-desc">Trek het getal van jouw kaart af van 11.<br>Dat getal = hoeveel kaarten de <em>andere drie spelers samen</em> boven jouw kaart hebben.</div>
+          </div>
+          <p class="lesson-text">Jij komt uit met de <strong>♠6</strong>. Je partner doet:</p>
+          <div class="math-demo">
+            <div class="math-line"><span class="math-op">11</span><span>= begin</span></div>
+            <div class="math-line"><span class="math-op">− 6</span><span>= de kaart die jij speelde</span></div>
+            <div class="math-line"><span class="math-op">=</span><span class="math-result">5</span><span>kaarten boven de 6 bij alle anderen samen</span></div>
+          </div>
+          <p class="lesson-text">
+            Je partner kijkt dan naar zijn eigen hand en de tafel. Hoeveel kaarten ziet hij boven de 6? Die trekt hij van de 5 af. Wat overblijft = hoe sterk jouw kleur is!
+          </p>
+          <div class="lesson-tip">
+            🎯 Zo weet je partner precies hoe sterk jouw kleur is — zonder dat jij iets hoeft te zeggen!
+          </div>
+        </div>
+
+        <!-- Les 3: Uitzondering vier kleintjes -->
+        <div class="lesson-page" id="lp2">
+          <div class="lesson-label">Les · stap 3 van 4</div>
+          <div class="lesson-title">⚠️ Let op: vier kleintjes!</div>
+          <p class="lesson-text">
+            Er is één uitzondering. Stel je hebt <strong>8, 7, 4, 2</strong> in ruiten — allemaal kleine kaarten, géén plaatje (10, B, V, H of A).
+          </p>
+          <div class="card-fan-wrap">
+            <div class="card-fan">
+              <div class="playing-card red"><span class="card-rank">8</span><span class="card-suit">♦</span><span class="card-num-label">1e</span></div>
+              <div class="playing-card red highlighted"><span class="card-rank">7</span><span class="card-suit">♦</span><span class="card-num-label">2e ← dit!</span></div>
+              <div class="playing-card red"><span class="card-rank">4</span><span class="card-suit">♦</span><span class="card-num-label">3e</span></div>
+              <div class="playing-card red"><span class="card-rank">2</span><span class="card-suit">♦</span><span class="card-num-label">4e</span></div>
+            </div>
+          </div>
+          <p class="lesson-text">
+            Hier kom je <strong>niet</strong> uit met de vierde van boven (de 2). In plaats daarvan speel je de <strong>tweede van boven</strong> — dus de 7.
+          </p>
+          <div class="lesson-highlight">
+            <div class="hl-title">📌 Waarom?</div>
+            De afspraak is: de vierde van boven <em>belooft een plaatje</em> in die kleur. Heb je geen plaatje? Dan speel je de tweede van boven. Zo weet je partner het verschil!
+          </div>
+          <p class="lesson-text">Heb je wél een plaatje erbij (zoals A, V, 9, 6, 3)? Dan gewoon de vierde van boven → de 6. ✅</p>
+        </div>
+
+        <!-- Les 4: Samenvatting -->
+        <div class="lesson-page" id="lp3">
+          <div class="lesson-label">Les · stap 4 van 4</div>
+          <div class="lesson-title">✅ Samenvatting</div>
+          <p class="lesson-text">Goed gedaan! Dit heb je geleerd:</p>
+          <div class="lesson-highlight">
+            <div class="hl-title">1️⃣ Vierde van boven</div>
+            Heb je vier kaarten of meer <em>met een plaatje</em>? Kom uit met de 4e kaart van boven (tel van hoog naar laag).
+          </div>
+          <div class="lesson-highlight">
+            <div class="hl-title">2️⃣ Tweede van boven</div>
+            Heb je vier kaarten of meer <em>zonder plaatje</em>? Kom dan uit met de 2e van boven.
+          </div>
+          <div class="lesson-highlight">
+            <div class="hl-title">3️⃣ Regel van Elf</div>
+            Je partner rekent: 11 − kaartwaarde = kaarten boven die kaart bij de drie anderen samen. Zo weet hij hoe sterk jouw kleur is!
+          </div>
+          <div class="lesson-tip">
+            🚀 Klaar voor de quiz? Laat zien wat je weet!
+          </div>
+        </div>
+
+      </div><!-- /lesson-body -->
+
+      <div class="lesson-nav">
+        <button class="lesson-prev-btn" id="lessonPrevBtn" onclick="lessonPrev()" disabled>← Terug</button>
+        <button class="lesson-next-btn" id="lessonNextBtn" onclick="lessonNext()">Volgende →</button>
+      </div>
+    </div><!-- /lessonScreen -->
+
+    <!-- ══ QUIZ ══ -->
+    <div id="questionScreen" class="hide">
+      <div class="question-area">
+        <div class="question-num" id="questionNum">Vraag 1 van 15</div>
+        <div class="question-text" id="questionText"></div>
+        <div class="card-hand" id="cardHand" style="display:none"></div>
+      </div>
+      <div class="options-area" id="optionsArea"></div>
+      <div class="feedback-box" id="feedbackBox"></div>
+      <div class="nav-area">
+        <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Volgende vraag →</button>
+      </div>
+    </div>
+
+    <!-- ══ RESULTATEN ══ -->
+    <div class="results-screen" id="resultsScreen">
+      <div class="results-score-circle">
+        <span class="big-num" id="finalScore">0</span>
+        <span class="of-num">van de 15</span>
+      </div>
+      <div class="results-title" id="resultTitle"></div>
+      <div class="results-msg" id="resultMsg"></div>
+      <button class="restart-btn" onclick="restartAll()">↺ Opnieuw</button>
+    </div>
+
+  </div><!-- /card -->
+</div><!-- /quiz-wrapper -->
+
+<script>
+// ── VRAGEN ──
+const questions = [
+  {
+    q: "Wat is de 'vierde van boven'?",
+    options: ["De op drie na hoogste kaart in een kleur", "De vierde hoogste troefkaart", "De vierde kaart die je in een slag speelt", "De op vier na hoogste kaart in een kleur"],
+    correct: 0,
+    feedback: "De vierde van boven is de op drie na hoogste kaart in de betreffende kleur. Bij A-H-9-6-3 is de 6 de vierde van boven."
+  },
+  {
+    q: "Waarom speel je de vierde van boven en niet gewoon de laagste kaart?",
+    options: ["Omdat de laagste kaart altijd troefsignaal geeft", "Omdat je dan meer punten verdient", "Zodat de leider weet dat je sterk bent", "Zodat de partner de regel van elf kan toepassen"],
+    correct: 3,
+    feedback: "Door de vierde van boven te spelen kan de partner de regel van elf toepassen: 11 minus de kaartwaarde = aantal kaarten boven die kaart bij de andere drie spelers. Dat geeft waardevolle informatie."
+  },
+  {
+    q: "Je hebt ♠ A-V-9-6-3. Welke kaart kom je uit met de vierde van boven?",
+    hand: "♠ A  V  9  6  3",
+    options: ["♠ 3", "♠ A", "♠ 6", "♠ 9"],
+    correct: 2,
+    feedback: "Tel van hoog: A=1e, V=2e, 9=3e, 6=4e. De vierde van boven is dus de 6."
+  },
+  {
+    q: "Wat doet je partner met de vierde-van-boven uitkomst?",
+    options: ["Hij weet hoeveel troeven je hebt", "Hij past de regel van elf toe", "Hij berekent je honneurpunten", "Hij bepaalt of hij een doublet moet geven"],
+    correct: 1,
+    feedback: "Je partner past de regel van elf toe: 11 − kaartwaarde = aantal kaarten boven die kaart bij de drie anderen samen."
+  },
+  {
+    q: "Hoe werkt de regel van elf?",
+    options: [
+      "11 minus je slagen = hoeveel slagen je partner heeft",
+      "11 = altijd het aantal kaarten in de langste kleur",
+      "11 minus honneurpunten = je distributiepunten",
+      "11 minus de kaartwaarde = aantal kaarten boven die kaart bij de overige drie spelers samen"
+    ],
+    correct: 3,
+    feedback: "Neem 11 en trek de waarde van de uitgekomen kaart ervan af. Het resultaat is het totale aantal kaarten boven die kaart bij de drie andere spelers samen."
+  },
+  {
+    q: "West komt uit met ♥6. Dummy: ♥A-8-3. Oost (jij): ♥H-10-2. Hoeveel kaarten boven de ♥6 heeft West?",
+    hand: "Dummy: ♥ A 8 3   ·   Jij (Oost): ♥ H 10 2",
+    options: [
+      "11−6=5; dummy 2 boven (A,8); jij 2 boven (H,10) → West: 5−2−2 = 1",
+      "11−6=5; dummy 2 boven; jij 2 boven → West: 5−2−2 = 1",
+      "11−6=5; dummy 3 boven; jij 3 boven → West: 5−3−3 = −1 (niet mogelijk)",
+      "11−6=5; West heeft alle 5 kaarten boven de 6"
+    ],
+    correct: 0,
+    feedback: "11−6=5. Dummy heeft 2 kaarten boven de 6 (A en 8). Jij hebt 2 kaarten boven de 6 (H en 10). 5−2−2=1: West heeft dus nog 1 schoppenkaart boven de 6."
+  },
+  {
+    q: "Van welke kleurlengte gebruik je de vierde van boven?",
+    options: ["Alleen van driekaarten", "Alleen van vijfkaarten of langer", "Van vierkaarten of langer", "Van tweekaarten (doubleton)"],
+    correct: 2,
+    feedback: "De vierde van boven gebruik je bij een vierkaart of langer. Van kortere kleuren (doubleton, driekaart) kom je anders uit."
+  },
+  {
+    q: "Je hebt ♦ 8-7-4-2 (vier kleintjes, geen plaatje). Welke kaart kom je uit?",
+    hand: "♦ 8  7  4  2",
+    options: ["♦ 2 (de laagste)", "♦ 7 (de tweede van boven)", "♦ 4 (de derde van boven)", "♦ 8 (de hoogste)"],
+    correct: 1,
+    feedback: "Van vier kleintjes zonder plaatje kom je uit met de tweede van boven, dus de 7. De vierde van boven belooft een plaatje — die heb je hier niet, dus je wijkt af."
+  },
+  {
+    q: "Wat belooft een uitkomst met de vierde van boven?",
+    options: ["Minimaal 12 honneurpunten", "Minimaal een vijfkaart", "Een singleton elders", "Een plaatje (10, B, V, H of A) in die kleur"],
+    correct: 3,
+    feedback: "De vierde-van-boven uitkomst belooft een plaatje in die kleur. Heb je alleen kleintjes, dan speel je de tweede van boven."
+  },
+  {
+    q: "Wat is het verschil tussen 'vierde van boven' en 'derde-vijfde van boven'?",
+    options: [
+      "Er is geen verschil, het zijn synoniemen",
+      "Bij derde-vijfde kom je uit met de derde kaart van een vierkaart en de vijfde van een vijfkaart",
+      "Bij derde-vijfde gebruik je de regel van tien en twaalf",
+      "Zowel B als C zijn correct"
+    ],
+    correct: 3,
+    feedback: "Bij derde-vijfde van boven gebruik je andere uitkomstkaarten (3e van 4-kaart, 5e van 5-kaart), en daarbij past de partner de regel van tien en twaalf toe — niet de regel van elf."
+  },
+  {
+    q: "Welke rekensom vervangt de regel van elf bij 'derde-vijfde van boven'?",
+    options: ["De regel van negen", "De regel van tien en twaalf", "De regel van veertien en zeventien", "De regel van elf blijft van toepassing"],
+    correct: 1,
+    feedback: "Als niet met de vierde maar met de derde-vijfde van boven wordt gestart, past de partner de regel van tien en twaalf toe."
+  },
+  {
+    q: "Partner West komt uit met ♠5. Dummy: ♠A-9-2. Jij (Oost): ♠H-8-3. Hoeveel kaarten boven ♠5 heeft West?",
+    hand: "Dummy: ♠ A 9 2   ·   Jij (Oost): ♠ H 8 3",
+    options: [
+      "11−5=6; dummy 2 boven (A,9); jij 2 boven (H,8) → West: 6−2−2 = 2",
+      "11−5=6; dummy 3 boven; jij 3 boven → West: 0",
+      "11−5=6; West heeft alle 6 kaarten boven de 5",
+      "11−5=6; dummy 1 boven; jij 1 boven → West: 4"
+    ],
+    correct: 0,
+    feedback: "11−5=6. Dummy: A en 9 zijn boven de 5 (=2). Jij: H en 8 zijn boven de 5 (=2). 6−2−2=2: West heeft nog 2 schoppen boven de 5."
+  },
+  {
+    q: "Je hebt ♣ A-H-7-3. Welke kaart is de vierde van boven?",
+    hand: "♣ A  H  7  3",
+    options: ["♣ A (de hoogste)", "♣ H (de tweede)", "♣ 7 (de derde)", "♣ 3 (de vierde)"],
+    correct: 3,
+    feedback: "Tel van hoog: A=1e, H=2e, 7=3e, 3=4e. De vierde van boven is dus de 3."
+  },
+  {
+    q: "Welke uitkomstsystemen zijn verwant aan de vierde van boven?",
+    options: ["Top van niets en derde-vijfde van boven", "Blackwood en Stayman", "Jacoby-transfer en Checkback", "Roman Keycard en splinters"],
+    correct: 0,
+    feedback: "Top van niets (uitkomen met de hoogste van kleintjes) en derde-vijfde van boven zijn nauw verwante uitkomstsystemen. Ze staan samen met vierde van boven vermeld bij de uitkomstafspraken."
+  },
+  {
+    q: "Waarom is de vierde-van-boven uitkomst zo populair?",
+    options: [
+      "Omdat het de makkelijkste manier is om een singleton aan te geven",
+      "Omdat het de tegenpartij misleidt over je honneurpunten",
+      "Omdat je dan altijd de hoogste slag wint",
+      "Omdat de partner via de regel van elf de sterkte van de kleur kan berekenen"
+    ],
+    correct: 3,
+    feedback: "De kracht zit in de mathematische precisie: via de regel van elf kan de partner exact berekenen hoeveel kaarten de leider boven de uitgekomen kaart heeft. Dat helpt bij de verdedigingsplanning."
+  }
+];
+
+// ── LES LOGICA ──
+const TOTAL_PAGES = 4;
+let lessonPage = 0;
+
+function initDots() {
+  const dots = document.getElementById('stepDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < TOTAL_PAGES; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i === 0 ? ' active' : '');
+    d.id = 'dot' + i;
+    dots.appendChild(d);
+  }
+}
+
+function updateDots() {
+  for (let i = 0; i < TOTAL_PAGES; i++) {
+    const d = document.getElementById('dot' + i);
+    d.className = 'step-dot' + (i < lessonPage ? ' done' : i === lessonPage ? ' active' : '');
+  }
+}
+
+function lessonNext() {
+  if (lessonPage < TOTAL_PAGES - 1) {
+    document.getElementById('lp' + lessonPage).classList.remove('active');
+    lessonPage++;
+    document.getElementById('lp' + lessonPage).classList.add('active');
+    updateDots();
+    document.getElementById('lessonPrevBtn').disabled = false;
+    document.getElementById('scoreBadge').textContent = 'Les ' + (lessonPage + 1) + '/4';
+    document.getElementById('progressBar').style.width = ((lessonPage / TOTAL_PAGES) * 45) + '%';
+    if (lessonPage === TOTAL_PAGES - 1) {
+      const btn = document.getElementById('lessonNextBtn');
+      btn.textContent = '🚀 Start de quiz!';
+      btn.classList.add('start-quiz');
+    }
+  } else {
+    startQuiz();
+  }
+}
+
+function lessonPrev() {
+  if (lessonPage > 0) {
+    document.getElementById('lp' + lessonPage).classList.remove('active');
+    lessonPage--;
+    document.getElementById('lp' + lessonPage).classList.add('active');
+    updateDots();
+    document.getElementById('scoreBadge').textContent = 'Les ' + (lessonPage + 1) + '/4';
+    document.getElementById('progressBar').style.width = ((lessonPage / TOTAL_PAGES) * 45) + '%';
+    const btn = document.getElementById('lessonNextBtn');
+    btn.textContent = 'Volgende →';
+    btn.classList.remove('start-quiz');
+    if (lessonPage === 0) document.getElementById('lessonPrevBtn').disabled = true;
+  }
+}
+
+function startQuiz() {
+  document.getElementById('lessonScreen').classList.add('hide');
+  document.getElementById('questionScreen').classList.remove('hide');
+  document.getElementById('headerSub').textContent = 'Quiz · 15 vragen';
+  document.getElementById('scoreBadge').textContent = '0 / 15';
+  renderQuestion();
+}
+
+// ── QUIZ LOGICA ──
+let current = 0;
+let score = 0;
+let answered = false;
+
+function renderQuestion() {
+  const q = questions[current];
+  document.getElementById('questionNum').textContent = 'Vraag ' + (current + 1) + ' van ' + questions.length;
+  document.getElementById('questionText').textContent = q.q;
+
+  const handEl = document.getElementById('cardHand');
+  if (q.hand) {
+    handEl.style.display = 'block';
+    handEl.innerHTML = formatHand(q.hand);
+  } else {
+    handEl.style.display = 'none';
+  }
+
+  const area = document.getElementById('optionsArea');
+  area.innerHTML = '';
+  ['A','B','C','D'].forEach((letter, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = '<span class="option-letter">' + letter + '</span>' + q.options[i];
+    btn.onclick = function() { choose(i); };
+    area.appendChild(btn);
+  });
+
+  document.getElementById('feedbackBox').className = 'feedback-box';
+  document.getElementById('feedbackBox').innerHTML = '';
+  document.getElementById('nextBtn').className = 'next-btn';
+  answered = false;
+
+  const pct = 45 + (current / questions.length) * 55;
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+function formatHand(hand) {
+  return hand
+    .replace(/♥/g, '<span class="suit-h">♥</span>')
+    .replace(/♦/g, '<span class="suit-d">♦</span>');
+}
+
+function choose(idx) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(function(b) { b.disabled = true; });
+
+  if (idx === q.correct) {
+    btns[idx].classList.add('correct');
+    score++;
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.correct].classList.add('correct');
+  }
+
+  document.getElementById('scoreBadge').textContent = score + ' / 15';
+
+  const fb = document.getElementById('feedbackBox');
+  const isCorrect = idx === q.correct;
+  fb.className = 'feedback-box show ' + (isCorrect ? 'correct' : 'wrong');
+  fb.innerHTML = (isCorrect ? '✅ Correct! ' : '❌ Niet juist. ') + q.feedback;
+
+  document.getElementById('nextBtn').className = 'next-btn show';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('questionScreen').classList.add('hide');
+  document.getElementById('resultsScreen').classList.add('show');
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('progressBar').style.width = '100%';
+
+  let title, msg;
+  if (score === 15)      { title = '🏆 Perfect!';       msg = 'Uitstekend! Je beheerst de vierde-van-boven regel en de regel van elf volledig. Je bent klaar voor de tafel!'; }
+  else if (score >= 12)  { title = '🎓 Uitstekend!';    msg = 'Heel goed! Je begrijpt de vierde van boven grondig. Oefenspellen zullen de puntjes op de i zetten.'; }
+  else if (score >= 9)   { title = '👍 Goed bezig!';    msg = 'Een solide basis. Herhaal de regel van elf en wanneer je de tweede van boven speelt in plaats van de vierde.'; }
+  else if (score >= 6)   { title = '📚 Aardig begin!';  msg = 'Je kent de basisideeën. Ga nog eens terug naar de les en probeer opnieuw!'; }
+  else                   { title = '💪 Blijven oefenen!'; msg = 'Dit onderwerp heeft wat meer studie nodig. Lees de les nog eens door en probeer opnieuw!'; }
+
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMsg').textContent = msg;
+}
+
+function restartAll() {
+  // Reset les
+  lessonPage = 0;
+  document.querySelectorAll('.lesson-page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('lp0').classList.add('active');
+  document.getElementById('lessonNextBtn').textContent = 'Volgende →';
+  document.getElementById('lessonNextBtn').classList.remove('start-quiz');
+  document.getElementById('lessonPrevBtn').disabled = true;
+  updateDots();
+  // Reset quiz
+  current = 0;
+  score = 0;
+  answered = false;
+  // Reset schermen
+  document.getElementById('resultsScreen').classList.remove('show');
+  document.getElementById('questionScreen').classList.add('hide');
+  document.getElementById('lessonScreen').classList.remove('hide');
+  document.getElementById('headerSub').textContent = 'Les + Quiz · Vierde van Boven';
+  document.getElementById('scoreBadge').textContent = 'Les 1/4';
+  document.getElementById('progressBar').style.width = '0%';
+}
+
+// Start
+initDots();
+</script>
+</body>
+</html>
